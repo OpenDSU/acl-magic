@@ -1,20 +1,19 @@
 
 var persist  = require("./lib/persistence.js");
 var cache    = require("./lib/cache.js");
-require("asynchron");
 
-exports.createEnclavePersistence = function(enclave, cache, type){
+module.exports.createEnclavePersistence = function(enclave, cache, type){
     if(!cache){
-        cache = exports.createCache();
+        cache = module.exports.createCache();
     }
     return persist.createEnclavePersistence(enclave, cache, type);
 }
 
-exports.createMemoryPersistence = function(){
+module.exports.createMemoryPersistence = function(){
     return persist.createMemoryPersistence();
 };
 
-exports.createCache = function(timeOut){
+module.exports.createCache = function(timeOut){
     return cache.createCache(timeOut); /* somethink like 60*1000 or more*/
 };
 
@@ -242,6 +241,6 @@ function Concern(concernName, persistence, exceptionalRulesFunction, afterCheckF
     }
 }
 
-exports.createConcern = function(concernName, persistence, exceptionalRulesFunction, afterCheckFunction){
+module.exports.createConcern = function(concernName, persistence, exceptionalRulesFunction, afterCheckFunction){
     return new Concern(concernName, persistence, exceptionalRulesFunction, afterCheckFunction);
 }

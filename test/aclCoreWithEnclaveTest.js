@@ -3,14 +3,13 @@ const tir = require("../../../psknode/tests/util/tir");
 
 const dc = require("double-check");
 const assert = dc.assert;
-const openDSU = require('../../opendsu');
-$$.__registerModule("opendsu", openDSU);
+const openDSU = require('opendsu');
 const scAPI = openDSU.loadApi("sc");
 const w3cDID = openDSU.loadAPI("w3cdid");
 const enclaveAPI = openDSU.loadApi("enclave");
 const acl = require("../index.js");
 var logger = require('double-check').logger;
-
+$$.LEGACY_BEHAVIOUR_ENABLED = true;
 assert.callback('Create enclave test', (testFinished) => {
     dc.createTestFolder('createDSU', async (err, folder) => {
         const testDomainConfig = {
@@ -99,7 +98,7 @@ assert.callback('Create enclave test', (testFinished) => {
                 });
 
             } catch (e) {
-                return console.log(e);
+                return console.error(e);
             }
         })
     });
