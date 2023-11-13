@@ -1,3 +1,4 @@
+require("../../../builds/output/testsRuntime");
 var logger = require('double-check').logger;
 // logger.logConfig.display.debug = false;
 
@@ -13,10 +14,7 @@ var writeConcern = acl.createConcern("write", persistence, function(zoneId, reso
     }
 });
 var readConcern = acl.createConcern("read", persistence, null, function(zoneId, resourceId, callback){
-    var allow = writeConcern.allow.async(zoneId,resourceId);
-    (function(allow){
-        callback(null, allow);
-    }).wait(allow);
+    writeConcern.allow(zoneId,resourceId, callback);
 });
 
 
