@@ -66,6 +66,12 @@ assert.steps("Acl core test",[
             }
         });
     },
+    function (next) {
+        persistence.loadResourceDirectGrants("write", "m_1", function (err, res) {
+            assert.equal(res[0], "admin");
+            next();
+        });
+    },
     function(next){
         writeConcern.allow("user_2", "r_2", function(err, res){
             assert.equal(res, false);
