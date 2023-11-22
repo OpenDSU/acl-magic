@@ -21,7 +21,7 @@ assert.callback('Create enclave test', (testFinished) => {
         }
 
         const domain = "testDomain"
-        const apiHub = await tir.launchConfigurableApiHubTestNodeAsync({ domains: [{ name: domain, config: testDomainConfig }] });
+        const apiHub = await tir.launchConfigurableApiHubTestNodeAsync({ domains: [{ name: domain, config: testDomainConfig }] , rootFolder: folder});
         const sc = scAPI.getSecurityContext();
 
         sc.on("initialised", async () => {
@@ -85,7 +85,7 @@ assert.callback('Create enclave test', (testFinished) => {
                         assert.equal(res[2], "admin");
                     });
 
-                    writeConcern.grant("admin", "m_1");
+                    await $$.promisify(writeConcern.grant)("admin", "m_1");
                     writeConcern.allow("user_1", "r_1", function (err, res) {
                         if (err) {
                             assert.fail("Failed with error", err.message);
