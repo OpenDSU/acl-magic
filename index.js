@@ -65,8 +65,6 @@ function lazyAsyncDeepTreeChecker(root, getChildren, checkFunction, returnCallBa
 }
 
 function Concern(concernName, persistence, exceptionalRulesFunction, afterCheckFunction){
-    var self = this;
-
     this.grant = function(zoneId, resourceId, callback){
         persistence.grant(concernName,zoneId, resourceId, callback);
     }
@@ -88,13 +86,12 @@ function Concern(concernName, persistence, exceptionalRulesFunction, afterCheckF
      */
 
     this.allow1 = function(zoneId, resourceId, callback){
-        var self = this;
         var allParentZones = persistence.loadZoneParents.async(zoneId);
-
+        var exceptionAllow;
         if(exceptionalRulesFunction){
-            var exceptionAllow = exceptionalRulesFunction.async(zoneId, resourceId);
+            exceptionAllow = exceptionalRulesFunction.async(zoneId, resourceId);
         } else {
-            var exceptionAllow = false;
+            exceptionAllow = false;
         }
 
         (function(allParentZones, exceptionAllow){
@@ -130,7 +127,7 @@ function Concern(concernName, persistence, exceptionalRulesFunction, afterCheckF
                 o[arr1[i]] = true;
             }
 
-            for(var i = 0, l = arr2.length; i<l; i++ ){
+            for(i = 0, l = arr2.length; i<l; i++ ){
                 if(o[arr2[i]]) {
                     return true;
                 }
@@ -159,8 +156,6 @@ function Concern(concernName, persistence, exceptionalRulesFunction, afterCheckF
     }
 
     this.allow = function(zoneId, resourceId, callback){
-        var self = this;
-
         if(exceptionalRulesFunction){
             exceptionalRulesFunction(zoneId,resourceId,function(err,favorableException){
                 if(err){
@@ -215,7 +210,7 @@ function Concern(concernName, persistence, exceptionalRulesFunction, afterCheckF
                 o[arr1[i]] = true;
             }
 
-            for(var i = 0, l = arr2.length; i<l; i++ ){
+            for(i = 0, l = arr2.length; i<l; i++ ){
                 if(o[arr2[i]]) {
                     return true;
                 }
