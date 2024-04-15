@@ -1,59 +1,58 @@
+const persist = require("./lib/persistence.js");
+const cache = require("./lib/cache.js");
 
-var persist  = require("./lib/persistence.js");
-var cache    = require("./lib/cache.js");
-
-module.exports.createEnclavePersistence = function(enclave, cache, type){
-    if(!cache){
+module.exports.createEnclavePersistence = function (enclave, cache, type) {
+    if (!cache) {
         cache = module.exports.createCache();
     }
     return persist.createEnclavePersistence(enclave, cache, type);
 }
 
-module.exports.createMemoryPersistence = function(){
+module.exports.createMemoryPersistence = function () {
     return persist.createMemoryPersistence();
 };
 
-module.exports.createCache = function(timeOut){
+module.exports.createCache = function (timeOut) {
     return cache.createCache(timeOut); /* somethink like 60*1000 or more*/
 };
 
 
-function lazyAsyncDeepTreeChecker(root, getChildren, checkFunction, returnCallBack){
-    var intermediateGenerators = [];
+function lazyAsyncDeepTreeChecker(root, getChildren, checkFunction, returnCallBack) {
+    let intermediateGenerators = [];
     intermediateGenerators.push(root);
-    var waitingAsyncCall = 0;
+    let waitingAsyncCall = 0;
 
-    function checkNextNode(){
-        if(!intermediateGenerators){
-            return ;
+    function checkNextNode() {
+        if (!intermediateGenerators) {
+            return;
         }
 
-        var currentNode = intermediateGenerators.shift();
-        if(!currentNode){
-            if(waitingAsyncCall == 0){
+        const currentNode = intermediateGenerators.shift();
+        if (!currentNode) {
+            if (waitingAsyncCall == 0) {
                 intermediateGenerators = null;
                 returnCallBack(null, false);
             } else {
-                return ; //will be triggered again from other call
+                return; //will be triggered again from other call
             }
         }
         waitingAsyncCall++;
-        getChildren(currentNode, function(err,arr){
-            if(intermediateGenerators){
+        getChildren(currentNode, function (err, arr) {
+            if (intermediateGenerators) {
                 waitingAsyncCall--;
-                arr.map(function(n){
+                arr.map(function (n) {
                     intermediateGenerators.push(n);
                 });
-                if(waitingAsyncCall == 0){
+                if (waitingAsyncCall == 0) {
                     checkNextNode(); //just in case the main checking chain is already stopped because getChildren was slower than the checkFunction
                 }
             }
         });
 
         waitingAsyncCall++;
-        checkFunction(currentNode, function(err,res){
+        checkFunction(currentNode, function (err, res) {
             waitingAsyncCall--;
-            if(res){
+            if (res) {
                 intermediateGenerators = null;
                 returnCallBack(null, true);
             } else {
@@ -61,23 +60,24 @@ function lazyAsyncDeepTreeChecker(root, getChildren, checkFunction, returnCallBa
             }
         })
     }
+
     checkNextNode();
 }
 
-function Concern(concernName, persistence, exceptionalRulesFunction, afterCheckFunction){
-    this.grant = function(zoneId, resourceId, callback){
-        persistence.grant(concernName,zoneId, resourceId, callback);
+function Concern(concernName, persistence, exceptionalRulesFunction, afterCheckFunction) {
+    this.grant = function (zoneId, resourceId, callback) {
+        persistence.grant(concernName, zoneId, resourceId, callback);
     }
 
-    this.ungrant = function(zoneId, resourceId, callback){
-        persistence.ungrant(concernName,zoneId, resourceId, callback);
+    this.ungrant = function (zoneId, resourceId, callback) {
+        persistence.ungrant(concernName, zoneId, resourceId, callback);
     }
 
-    this.addResourceParent = function(resourcesUID, parentUid, callback){
+    this.addResourceParent = function (resourcesUID, parentUid, callback) {
         persistence.addResourceParent(resourcesUID, parentUid, callback);
     }
 
-    this.addZoneParent = function(zoneId, parentZoneId, callback){
+    this.addZoneParent = function (zoneId, parentZoneId, callback) {
         persistence.addZoneParent(zoneId, parentZoneId, callback);
     }
 
@@ -85,33 +85,32 @@ function Concern(concernName, persistence, exceptionalRulesFunction, afterCheckF
         allow return by calling callback(null,true) or callback(null,false). It should return only once.
      */
 
-    this.allow1 = function(zoneId, resourceId, callback){
-        var allParentZones = persistence.loadZoneParents.async(zoneId);
-        var exceptionAllow;
-        if(exceptionalRulesFunction){
+    this.allow1 = function (zoneId, resourceId, callback) {
+        const allParentZones = persistence.loadZoneParents.async(zoneId);
+        let exceptionAllow;
+        if (exceptionalRulesFunction) {
             exceptionAllow = exceptionalRulesFunction.async(zoneId, resourceId);
         } else {
             exceptionAllow = false;
         }
 
-        (function(allParentZones, exceptionAllow){
-            if(exceptionAllow) {
+        (function (allParentZones, exceptionAllow) {
+            if (exceptionAllow) {
                 intermediateReturnCallback(null, true);
             } else {
                 lazyAsyncDeepTreeChecker(resourceId,
-                    function(node, callback){ //get children
-                        var parents = persistence.loadResourceDirectParents.async(node);
-                        (function(parents){
-                            callback(null,parents);
+                    function (node, callback) { //get children
+                        const parents = persistence.loadResourceDirectParents.async(node);
+                        (function (parents) {
+                            callback(null, parents);
                         }).wait(parents);
                     },
-                    function(node, callback){ //checkFunction
-                        var resourceGrants = persistence.loadResourceDirectGrants.async(concernName, node);
-                        (function(resourceGrants){
-                            if(notDisjoint(resourceGrants, allParentZones)){
+                    function (node, callback) { //checkFunction
+                        const resourceGrants = persistence.loadResourceDirectGrants.async(concernName, node);
+                        (function (resourceGrants) {
+                            if (notDisjoint(resourceGrants, allParentZones)) {
                                 callback(null, true);
-                            }
-                            else {
+                            } else {
                                 callback(null, false);
                             }
                         }).wait(resourceGrants);
@@ -121,14 +120,14 @@ function Concern(concernName, persistence, exceptionalRulesFunction, afterCheckF
             }
         }).wait(allParentZones, exceptionAllow);
 
-        function notDisjoint(arr1, arr2){
-            var o = {};
-            for(var i = 0, l = arr1.length; i<l; i++ ){
+        function notDisjoint(arr1, arr2) {
+            const o = {};
+            for (let i = 0, l = arr1.length; i < l; i++) {
                 o[arr1[i]] = true;
             }
 
-            for(i = 0, l = arr2.length; i<l; i++ ){
-                if(o[arr2[i]]) {
+            for (let i = 0, l = arr2.length; i < l; i++) {
+                if (o[arr2[i]]) {
                     return true;
                 }
             }
@@ -136,48 +135,48 @@ function Concern(concernName, persistence, exceptionalRulesFunction, afterCheckF
         }
 
 
-        function intermediateReturnCallback(err, res){
-            if(afterCheckFunction){
-                afterCheckFunction(zoneId, resourceId,function(err,afterCheckAllow){
-                    if(err){
+        function intermediateReturnCallback(err, res) {
+            if (afterCheckFunction) {
+                afterCheckFunction(zoneId, resourceId, function (err, afterCheckAllow) {
+                    if (err) {
                         callback(err);
-                    }else if(afterCheckAllow){
-                        callback(undefined,afterCheckAllow);
-                    }else{
-                        callback(undefined,res);
+                    } else if (afterCheckAllow) {
+                        callback(undefined, afterCheckAllow);
+                    } else {
+                        callback(undefined, res);
                     }
                 });
-            }else{
-                callback(undefined,res);
+            } else {
+                callback(undefined, res);
             }
         }
 
 
     }
 
-    this.allow = function(zoneId, resourceId, callback){
-        if(exceptionalRulesFunction){
-            exceptionalRulesFunction(zoneId,resourceId,function(err,favorableException){
-                if(err){
+    this.allow = function (zoneId, resourceId, callback) {
+        if (exceptionalRulesFunction) {
+            exceptionalRulesFunction(zoneId, resourceId, function (err, favorableException) {
+                if (err) {
                     callback(err);
-                }else if(favorableException===true){
-                    intermediateReturnCallback(undefined,true);
-                }else{
+                } else if (favorableException === true) {
+                    intermediateReturnCallback(undefined, true);
+                } else {
                     checkTree();
                 }
             })
-        }else{
+        } else {
             checkTree();
         }
 
-        function checkTree(){
-            persistence.loadZoneParents(zoneId,function(err,allParentZones){
-                if(err){
+        function checkTree() {
+            persistence.loadZoneParents(zoneId, function (err, allParentZones) {
+                if (err) {
                     callback(err);
-                }else{
+                } else {
                     lazyAsyncDeepTreeChecker(resourceId,
-                        function(node, callback){ //get children
-                            process.nextTick(function() {
+                        function (node, callback) { //get children
+                            process.nextTick(function () {
                                 persistence.loadResourceDirectParents(node, function (err, parents) {
                                     if (err) {
                                         callback(err);
@@ -187,13 +186,13 @@ function Concern(concernName, persistence, exceptionalRulesFunction, afterCheckF
                                 });
                             })
                         },
-                        function(node, callback){ //checkFunction
-                            persistence.loadResourceDirectGrants(concernName, node,function(err,resourceGrants){
-                                if(err){
+                        function (node, callback) { //checkFunction
+                            persistence.loadResourceDirectGrants(concernName, node, function (err, resourceGrants) {
+                                if (err) {
                                     callback(err);
-                                }else if(notDisjoint(resourceGrants, allParentZones)){
+                                } else if (notDisjoint(resourceGrants, allParentZones)) {
                                     callback(null, true);
-                                }else {
+                                } else {
                                     callback(null, false);
                                 }
                             })
@@ -204,38 +203,38 @@ function Concern(concernName, persistence, exceptionalRulesFunction, afterCheckF
             })
         }
 
-        function notDisjoint(arr1, arr2){
-            var o = {};
-            for(var i = 0, l = arr1.length; i<l; i++ ){
+        function notDisjoint(arr1, arr2) {
+            const o = {};
+            for (let i = 0, l = arr1.length; i < l; i++) {
                 o[arr1[i]] = true;
             }
 
-            for(i = 0, l = arr2.length; i<l; i++ ){
-                if(o[arr2[i]]) {
+            for (let i = 0, l = arr2.length; i < l; i++) {
+                if (o[arr2[i]]) {
                     return true;
                 }
             }
             return false;
         }
 
-        function intermediateReturnCallback(err, res){
-            if(afterCheckFunction){
-                afterCheckFunction(zoneId, resourceId,function(err,afterCheckAllow){
-                    if(err){
+        function intermediateReturnCallback(err, res) {
+            if (afterCheckFunction) {
+                afterCheckFunction(zoneId, resourceId, function (err, afterCheckAllow) {
+                    if (err) {
                         callback(err);
-                    }else if(afterCheckAllow){
-                        callback(undefined,afterCheckAllow);
-                    }else{
-                        callback(undefined,res);
+                    } else if (afterCheckAllow) {
+                        callback(undefined, afterCheckAllow);
+                    } else {
+                        callback(undefined, res);
                     }
                 });
-            }else{
-                callback(undefined,res);
+            } else {
+                callback(undefined, res);
             }
         }
     }
 }
 
-module.exports.createConcern = function(concernName, persistence, exceptionalRulesFunction, afterCheckFunction){
+module.exports.createConcern = function (concernName, persistence, exceptionalRulesFunction, afterCheckFunction) {
     return new Concern(concernName, persistence, exceptionalRulesFunction, afterCheckFunction);
 }

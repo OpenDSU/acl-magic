@@ -1,12 +1,12 @@
-var logger = require('double-check').logger;
+const logger = require('double-check').logger;
 logger.logConfig.display.debug = false;
 
-var acl = require("../lib/acl.js");
-var assert  = require('double-check').assert;
-var redis = require('redis').createClient();
-var persistence =  acl.createRedisPersistence(redis);
+const acl = require("../lib/acl.js");
+const assert  = require('double-check').assert;
+const redis = require('redis').createClient();
+const persistence =  acl.createRedisPersistence(redis);
 
-var writeConcern = acl.createConcern("write", persistence, function(zoneId, resourceId, callback){
+const writeConcern = acl.createConcern("write", persistence, function(zoneId, resourceId, callback){
     if(zoneId == "root"){
         callback(null, true);
     } else {
@@ -14,8 +14,8 @@ var writeConcern = acl.createConcern("write", persistence, function(zoneId, reso
     }
 });
 
-var readConcern = acl.createConcern("read", persistence, null, function(zoneId, resourceId, callback){
-    var allow = writeConcern.allow.async(zoneId,resourceId);
+const readConcern = acl.createConcern("read", persistence, null, function(zoneId, resourceId, callback){
+    const allow = writeConcern.allow.async(zoneId,resourceId);
     (function(allow){
         callback(null, allow);
     }).wait(allow);

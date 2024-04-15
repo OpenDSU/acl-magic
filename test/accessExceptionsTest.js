@@ -6,16 +6,15 @@
 /**
  * Created by ciprian on 15.02.2017.
  */
-var logger = require('double-check').logger;
+const logger = require('double-check').logger;
 logger.logConfig.display.debug = false;
 
 
-var acl = require("../lib/acl.js");
-var container = require('safebox').container;
-var apersistence = require('apersistence');
-var redisClient = require('redis').createClient();
-var fs = require('fs');
-var assert = require('double-check').assert;
+const acl = require("../lib/acl.js");
+const container = require('safebox').container;
+const apersistence = require('apersistence');
+const redisClient = require('redis').createClient();
+const assert = require('double-check').assert;
 
 container.resolve("redisClient",redisClient);
 
@@ -25,7 +24,7 @@ container.declareDependency("redisPersistence",["redisClient"],function(outOfSer
         logger.debug("Redis persistence failed");
     }else{
         logger.debug("Initialising Redis persistence...");
-        redisPersistence = apersistence.createRedisPersistence(redisClient);
+        const redisPersistence = apersistence.createRedisPersistence(redisClient);
         return redisPersistence;
     }
 });
@@ -48,7 +47,7 @@ container.declareDependency("accessExceptionsTest",['aclConfigurator','aclChecke
 
 
 function runTest(aclConfigurator,aclChecker,testFinished){
-    var testRules = [
+    const testRules = [
         {
             "contextType": "swarm",
             "context": "swarm1",
@@ -69,7 +68,7 @@ function runTest(aclConfigurator,aclChecker,testFinished){
         }
     ];
 
-    var userZones = {
+    const userZones = {
         "user1":["zone1","zone2"],
         "user2":["zone1"],
         "user3":["zone2"],
@@ -77,9 +76,9 @@ function runTest(aclConfigurator,aclChecker,testFinished){
         "zone2":["zone0"]
     };
 
-    var resourceToAccess = ["swarm", "swarm1", "ctor", "ctor1", "execution"];
+    const resourceToAccess = ["swarm", "swarm1", "ctor", "ctor1", "execution"];
 
-    var testCases = [{
+    const testCases = [{
         "user":"user1",
         "expectedResult":false
         },{
@@ -93,11 +92,11 @@ function runTest(aclConfigurator,aclChecker,testFinished){
         "expectedResult":false
     }];
 
-    insertRules(function(err,result){
+    insertRules(function(err){
         if(err){
             assert.fail("Failed to persist rules\nErrors encountered:\n",err);
         }else{
-            var testsPassed = 0;
+            let testsPassed = 0;
             createUserZones();
             testCases.forEach(function(testCase){
                 runTestCase(testCase,function(err,result){
@@ -108,7 +107,7 @@ function runTest(aclConfigurator,aclChecker,testFinished){
                         testsPassed++;
                         if(testsPassed===testCases.length){
                             testFinished();
-                            aclConfigurator.flushExistingRules(function(err,result){
+                            aclConfigurator.flushExistingRules(function(){
                                 redisClient.quit();
                             })
                         }
@@ -119,10 +118,10 @@ function runTest(aclConfigurator,aclChecker,testFinished){
     });
 
     function insertRules(callback) {
-        var rulesAdded = 0;
-        var errors = [];
+        let rulesAdded = 0;
+        const errors = [];
         testRules.forEach(function(rule){
-            aclConfigurator.addRule(rule,false,function(err,result){
+            aclConfigurator.addRule(rule,false,function(err){
                 if(err){
                     errors.push(err);
                 }else{
@@ -140,7 +139,7 @@ function runTest(aclConfigurator,aclChecker,testFinished){
     }
 
     function  createUserZones(){
-        for(var child in userZones){
+        for(const child in userZones){
             userZones[child].forEach(function(parent){
                 aclConfigurator.addZoneParent(child,parent);
             });

@@ -2,26 +2,24 @@
  * Created by ciprian on 16.02.2017.
  */
 
-var logger = require('double-check').logger;
+const logger = require('double-check').logger;
 logger.logConfig.display.debug = false;
 
-var acl = require("../lib/acl.js");
-var container = require('safebox').container;
-var apersistence = require('apersistence');
-var redisClient = require('redis').createClient();
-var fs = require('fs');
+const acl = require("../lib/acl.js");
+const container = require('safebox').container;
+const apersistence = require('apersistence');
+const redisClient = require('redis').createClient();
 
 
+container.resolve("redisClient", redisClient);
 
-container.resolve("redisClient",redisClient);
 
-
-container.declareDependency("redisPersistence",["redisClient"],function(outOfService,redisClient){
-    if(outOfService){
+container.declareDependency("redisPersistence", ["redisClient"], function (outOfService, redisClient) {
+    if (outOfService) {
         logger.debug("Redis persistence failed");
-    }else{
+    } else {
         logger.debug("Initialising Redis persistence...");
-        redisPersistence = apersistence.createRedisPersistence(redisClient);
+        const redisPersistence = apersistence.createRedisPersistence(redisClient);
         return redisPersistence;
     }
 });
@@ -30,29 +28,29 @@ container.declareDependency("redisPersistence",["redisClient"],function(outOfSer
 acl.enableACLConfigurator();
 acl.enableACLChecker();
 
-var assert = require('double-check').assert;
+const assert = require('double-check').assert;
 
 
-container.declareDependency("accessResourcesTest",['aclConfigurator','aclChecker'],function(outOfService,aclConfigurator,aclChecker){
-    if(outOfService){
+container.declareDependency("accessResourcesTest", ['aclConfigurator', 'aclChecker'], function (outOfService, aclConfigurator, aclChecker) {
+    if (outOfService) {
         assert.fail("Could not run 'accessResourcesTest'\nDependencies were not met");
-    }else{
+    } else {
 
-        assert.callback("Access exceptions test",function(testFinished){
-            runTest(aclConfigurator,aclChecker,testFinished);
+        assert.callback("Access exceptions test", function (testFinished) {
+            runTest(aclConfigurator, aclChecker, testFinished);
         })
     }
 });
 
 
-function runTest(aclConfigurator,aclChecker,testFinished){
-    var testRules = [
+function runTest(aclConfigurator, aclChecker, testFinished) {
+    const testRules = [
         {
             "contextType": "swarm",
             "context": "swarm1",
             "zone": "user",
             "action": "execution",
-            "type":"white_list"
+            "type": "white_list"
         },
         {
             "contextType": "swarm",
@@ -61,37 +59,36 @@ function runTest(aclConfigurator,aclChecker,testFinished){
             "subcontext": "ctor1",
             "zone": "user",
             "action": "execution",
-            "type":"black_list"
+            "type": "black_list"
         }
     ];
 
-    var resourceToAccess = ["swarm", "swarm1", "ctor", "ctor1", "execution"];
 
-    var testCases = [{
-        "user":"user",
-        "expectedResult":false,
+    const testCases = [{
+        "user": "user",
+        "expectedResult": false,
         "resource": ["swarm", "swarm1", "ctor", "ctor1", "execution"]
-        },{
-        "user":"user",
-        "expectedResult":true,
+    }, {
+        "user": "user",
+        "expectedResult": true,
         "resource": ["swarm", "swarm1", "ctor", "ctor2", "execution"]
-        }];
+    }];
 
-    insertRules(function(err,result){
-        if(err){
-            assert.fail("Failed to persist rules\nErrors encountered:\n",err);
-        }else{
-            var testsPassed = 0;
-            testCases.forEach(function(testCase){
-                runTestCase(testCase,function(err,result){
-                    if(err){
+    insertRules(function (err) {
+        if (err) {
+            assert.fail("Failed to persist rules\nErrors encountered:\n", err);
+        } else {
+            let testsPassed = 0;
+            testCases.forEach(function (testCase) {
+                runTestCase(testCase, function (err, result) {
+                    if (err) {
                         assert.fail(err.message);
-                    }else{
-                        assert.equal(result,testCase["expectedResult"],"accessResourcesTest failed for user "+testCase["user"])
+                    } else {
+                        assert.equal(result, testCase["expectedResult"], "accessResourcesTest failed for user " + testCase["user"])
                         testsPassed++;
-                        if(testsPassed===testCases.length){
+                        if (testsPassed === testCases.length) {
                             testFinished();
-                            aclConfigurator.flushExistingRules(function(err,result){
+                            aclConfigurator.flushExistingRules(function () {
                                 redisClient.quit();
                             })
                         }
@@ -102,19 +99,19 @@ function runTest(aclConfigurator,aclChecker,testFinished){
     });
 
     function insertRules(callback) {
-        var rulesAdded = 0;
-        var errors = [];
-        testRules.forEach(function(rule){
-            aclConfigurator.addRule(rule,false,function(err,result){
-                if(err){
+        let rulesAdded = 0;
+        const errors = [];
+        testRules.forEach(function (rule) {
+            aclConfigurator.addRule(rule, false, function (err) {
+                if (err) {
                     errors.push(err);
-                }else{
+                } else {
                     rulesAdded++;
                 }
-                if(rulesAdded+errors.length===testRules.length) {
-                    if(errors.length>0){
+                if (rulesAdded + errors.length === testRules.length) {
+                    if (errors.length > 0) {
                         callback(errors);
-                    }else {
+                    } else {
                         callback();
                     }
                 }
@@ -122,7 +119,7 @@ function runTest(aclConfigurator,aclChecker,testFinished){
         })
     }
 
-    function runTestCase(testCase,callback){
-        aclChecker.apply({},testCase.resource.concat([testCase["user"],callback]));
+    function runTestCase(testCase, callback) {
+        aclChecker.apply({}, testCase.resource.concat([testCase["user"], callback]));
     }
 }

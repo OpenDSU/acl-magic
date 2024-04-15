@@ -5,7 +5,6 @@ const dc = require("double-check");
 const assert = dc.assert;
 const openDSU = require('opendsu');
 const scAPI = openDSU.loadApi("sc");
-const w3cDID = openDSU.loadAPI("w3cdid");
 const enclaveAPI = openDSU.loadApi("enclave");
 const acl = require("../index.js");
 var logger = require('double-check').logger;
@@ -21,7 +20,7 @@ assert.callback('Create enclave test', (testFinished) => {
         }
 
         const domain = "testDomain"
-        const apiHub = await tir.launchConfigurableApiHubTestNodeAsync({ domains: [{ name: domain, config: testDomainConfig }] , rootFolder: folder});
+        await tir.launchConfigurableApiHubTestNodeAsync({ domains: [{ name: domain, config: testDomainConfig }] , rootFolder: folder});
         const sc = scAPI.getSecurityContext();
 
         sc.on("initialised", async () => {
@@ -38,7 +37,7 @@ assert.callback('Create enclave test', (testFinished) => {
                             callback(null, false);
                         }
                     });
-                    const readConcern = acl.createConcern("read", persistence, null, function (zoneId, resourceId, callback) {
+                    acl.createConcern("read", persistence, null, function (zoneId, resourceId, callback) {
                         const allow = writeConcern.allow.async(zoneId, resourceId);
                         (function (allow) {
                             callback(null, allow);
