@@ -20,7 +20,10 @@ assert.callback('Create enclave test', (testFinished) => {
         }
 
         const domain = "testDomain"
-        await tir.launchConfigurableApiHubTestNodeAsync({ domains: [{ name: domain, config: testDomainConfig }] , rootFolder: folder});
+        await tir.launchConfigurableApiHubTestNodeAsync({
+            domains: [{name: domain, config: testDomainConfig}],
+            rootFolder: folder
+        });
         const sc = scAPI.getSecurityContext();
 
         sc.on("initialised", async () => {
@@ -54,7 +57,7 @@ assert.callback('Create enclave test', (testFinished) => {
                     await $$.promisify(persistence.addResourceParent)("r_2", "m_2");
                     await $$.promisify(persistence.addResourceParent)("notes", "table");
                     await $$.promisify(persistence.addResourceParent)("notes2", "did");
-                    
+
                     let result = await $$.promisify(persistence.localResourceExists)("notes", "table");
                     assert.equal(result, true)
                     result = await $$.promisify(persistence.localResourceExists)("notes2", "table");
@@ -64,8 +67,7 @@ assert.callback('Create enclave test', (testFinished) => {
 
                     try {
                         await $$.promisify(persistence.addResourceParent)("r_2", "m_2");
-                    }
-                    catch (err) {
+                    } catch (err) {
                         assert.equal(err.originalMessage, "Trying to insert into existing record");
                     }
                     await $$.promisify(persistence.addResourceParent)("m_2", "g_x");
